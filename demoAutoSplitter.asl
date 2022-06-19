@@ -2,11 +2,11 @@ state("flashplayer_32_sa") {
     int levelData: 0x00D18438, 0x118 , 0xFC, 0x34 , 0x14C, 0x258;
     int stackedData: 0xD18438, 0x118, 0x2C, 0x274, 0xC, 0x14, 0x7C8;
     int finishCounter: 0xD18438, 0x71C, 0x48, 0x14, 0x150, 0x10, 0x10, 0x4;
-    int currentLevel: 0xD18438, 0x14, 0x28, 0x4, 0x38, 0xF2C;
 }
 
 init {
     vars.resetTest = 0;
+    vars.checkDoubleSplit = false;
 }
 
 startup {
@@ -14,6 +14,7 @@ startup {
     settings.CurrentDefaultParent = "Demo";
 
     settings.Add("Opening Level");
+
     settings.CurrentDefaultParent = "Opening Level";
     settings.Add("Obstacle Course?");
     settings.Add("Gut Bus Extreme!");
@@ -26,8 +27,24 @@ startup {
     settings.Add("Rope Swings");
 
     settings.CurrentDefaultParent = "Demo";
-    settings.Add("Reset Any Unfinished Level");
-    settings.SetToolTip("Reset Any Unfinished Level", "Leave unchecked and it will only reset on an unfinished first split");
+    settings.Add("Custom Settings");
+    settings.CurrentDefaultParent = "Custom Settings";
+    settings.Add("Disable Double Splits");
+
+    
+}
+
+update{
+    if (settings["Disable Double Splits"]){
+        if (vars.checkDoubleSplit == true){
+            if (current.stackedData == 3){
+                vars.checkDoubleSplit = false;
+            }
+            else{
+                return false;
+            }
+        }
+    }
 }
 
 start {
@@ -89,15 +106,16 @@ start {
 
 split {
     if (current.finishCounter > old.finishCounter){
-        if(settings["Reset Any Unfinished Level"]){
-            vars.resetTest = current.finishCounter;
-        }
+        vars.resetTest = current.finishCounter;
+        vars.checkDoubleSplit = true;
         return true;
     }
 }
 
 reset {
-    if (current.stackedData == 3 && old.stackedData == 4 && current.finishCounter == vars.resetTest){
-        return true;
+    if (current.stackedData == 3 && current.finishCounter == vars.resetTest){
+        if (old.stackedData == 4 || old.stackedData == 5){
+            return true;
+        }            
     }
 }
